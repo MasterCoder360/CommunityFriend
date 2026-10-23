@@ -7,7 +7,7 @@ body {
   height: 400px;
   background-image:
     linear-gradient(rgba(254,255,255,0.7), rgba(237,238,240,0.7)),
-    url('fall.gif');
+    url('/fall.gif');
   background-size: cover;
   background-position: center;
 }
