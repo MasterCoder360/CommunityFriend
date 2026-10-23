@@ -1,4 +1,6 @@
 body {
+    background-color: #ff0000;
+body {
     margin: 0;
     padding-top: 80px; 
     font-family: Arial, sans-serif;
@@ -195,4 +197,5 @@ h1.digital-display {
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+}
 }
