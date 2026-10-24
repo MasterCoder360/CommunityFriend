@@ -1,23 +1,15 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "engines": {
-    "node": ">=18.0.0"
+    "start": "node backend/server.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.3.0",
-    "playwright": "^1.44.0",
-    "puppeteer": "^25.16.0"
+    "playwright": "^1.64.1",
+    "mongoose": "^8.0.0",
+    "node-cron": "^3.0.3"
   }
 }
