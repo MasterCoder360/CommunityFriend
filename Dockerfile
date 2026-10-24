@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/playwright:v1.44.0-jammy
 WORKDIR /app
-COPY backend/package*.json ./
-RUN npm install
 COPY . .
+WORKDIR /app/backend
+RUN npm install
 EXPOSE 5000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
