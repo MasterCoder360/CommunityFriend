@@ -10,7 +10,7 @@ body {
     align-items: center;
     box-sizing: border-box;
     background-image:
-        linear-gradient(rgba(254,255,255,0.7), rgba(237,238,240,0.7)),
+        linear-gradient(rgba(254, 255, 255, 0.387), rgba(237, 238, 240, 0.74)),
         url('images/fall.gif');
     background-size: cover;
     background-position: center;
