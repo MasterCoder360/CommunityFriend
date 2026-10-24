@@ -56,19 +56,21 @@
                 loadingStatus.style.display = "none";
 
                 if (result.success && result.data.length > 0) {
-                    result.data.forEach(event => {
-                        const eventCard = document.createElement("div");
-                        eventCard.className = "event-card";
+                 result.data.forEach(event => {
+                const eventCard = document.createElement("div");
+                eventCard.className = "event-card";
 
-                        const locationText = event.location ? `<p class="event-location">📍 <strong>Location:</strong> ${event.location}</p>` : '';
+                const locationText = event.location ? `<p class="event-location">📍 <strong>Location:</strong> ${event.location}</p>` : '';
+                const urlText = event.url ? `<a href="${event.url}" target="_blank" rel="noopener noreferrer" class="event-link">View Event Details →</a>` : '';
 
-                        eventCard.innerHTML = `
-                            <h2 class="event-title">${event.title}</h2>
-                            <p class="event-date">📅 <strong>Date:</strong> ${event.date}</p>
-                            ${locationText}
-                        `;
-                        eventsContainer.appendChild(eventCard);
-                    });
+                eventCard.innerHTML = `
+                <h2 class="event-title">${event.title}</h2>
+                <p class="event-date">📅 <strong>Date:</strong> ${event.date}</p>
+                ${locationText}
+                ${urlText}
+                `;
+                eventsContainer.appendChild(eventCard);
+                });
                 } else {
                     loadingStatus.textContent = "No upcoming events found at this time.";
                     loadingStatus.style.display = "block";

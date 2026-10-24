@@ -20,6 +20,7 @@ const eventSchema = new mongoose.Schema({
   title: String,
   date: String,
   location: String,
+  url: String,
   scrapedAt: { type: Date, default: Date.now }
 });
 
@@ -49,14 +50,18 @@ async function scrapeAndSave() {
         headers.forEach(el => {
           const text = el.innerText ? el.innerText.trim() : '';
           if (!text) return;
+          
+          const parentLink = el.closest('a');
+          const url = parentLink && parentLink.href ? parentLink.href : 'https://community1stjc.com';
+
           if (text.includes('Fall Carnival @ Pershing Field')) {
-            extractedEvents.push({ title: 'Fall Carnival @ Pershing Field', date: 'September 10 - September 28, 2025', location: 'Pershing Field' });
+            extractedEvents.push({ title: 'Fall Carnival @ Pershing Field', date: 'September 10 - September 28, 2025', location: 'Pershing Field', url });
           } else if (text.includes('Back to School Bash')) {
-            extractedEvents.push({ title: 'Back to School Bash 2025', date: 'Stay tuned for 2026', location: 'Jersey City' });
+            extractedEvents.push({ title: 'Back to School Bash 2025', date: 'Stay tuned for 2026', location: 'Jersey City', url });
           } else if (text.includes('Freestyle in the Heights')) {
-            extractedEvents.push({ title: 'Freestyle in the Heights: 40th Anniversary', date: 'September 20th, 2025 at 6pm', location: 'Jersey City Heights' });
+            extractedEvents.push({ title: 'Freestyle in the Heights: 40th Anniversary', date: 'September 20th, 2025 at 6pm', location: 'Jersey City Heights', url });
           } else if (text.includes('The Community Service Awards')) {
-            extractedEvents.push({ title: 'The Community Service Awards', date: 'Thursday, October 9, 2025', location: 'The Chandelier' });
+            extractedEvents.push({ title: 'The Community Service Awards', date: 'Thursday, October 9, 2025', location: 'The Chandelier', url });
           }
         });
         return Array.from(new Set(extractedEvents.map(e => JSON.stringify(e)))).map(stringified => JSON.parse(stringified));
@@ -86,10 +91,14 @@ async function scrapeAndSave() {
           const dateMatch = containerText.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{0,4}/i) || 
                             containerText.match(/\d{1,2}:\d{2}\s*(?:am|pm)\s*-\s*\d{1,2}:\d{2}\s*(?:am|pm)/i);
           
+          const parentLink = el.closest('a') || (container ? container.querySelector('a') : null);
+          const url = parentLink && parentLink.href ? parentLink.href : 'https://jerseycityculture.org/events/';
+          
           extractedEvents.push({
             title: title,
             date: dateMatch ? dateMatch[0].trim() : 'Check website for details',
-            location: 'Jersey City, NJ'
+            location: 'Jersey City, NJ',
+            url: url
           });
         });
         return Array.from(new Set(extractedEvents.map(e => JSON.stringify(e)))).map(stringified => JSON.parse(stringified));
