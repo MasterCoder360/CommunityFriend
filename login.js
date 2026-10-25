@@ -1,4 +1,4 @@
-const API_URL = "https://communityfriend.onrender.com/"; 
+const API_URL = "https://communityfriend.onrender.com"; 
 
 let isLoginMode = true;
 
@@ -39,6 +39,18 @@ authForm.addEventListener('submit', async (e) => {
     const username = document.getElementById('username').value.trim();
     
     authError.textContent = '';
+
+    // Frontend validation
+    if (!email || !password) {
+        authError.textContent = 'Email and password are required.';
+        return;
+    }
+    
+    if (!isLoginMode && !username) {
+        authError.textContent = 'Username is required for Sign Up.';
+        return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = isLoginMode ? 'Signing In...' : 'Creating Account...';
 
@@ -65,7 +77,7 @@ authForm.addEventListener('submit', async (e) => {
         }
     } catch (error) {
         console.error('Auth error:', error);
-        authError.textContent = 'Network error. Please try again.';
+        authError.textContent = 'Network error. Please check your connection.'; 
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = isLoginMode ? 'Sign In' : 'Sign Up';
