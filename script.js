@@ -16,30 +16,39 @@ window.addEventListener('load', () => {
         run1();
     }
 });
-function updateHeaderAuth() {
-    const userStr = localStorage.getItem('user');
+async function updateHeaderAuth() {
     const loginBtn = document.getElementById('header-login-btn');
     const greeting = document.getElementById('header-greeting');
     const logoutBtn = document.getElementById('header-logout-btn');
 
-    if (userStr) {
-        const user = JSON.parse(userStr);
-        loginBtn.style.display = 'none';
-        greeting.style.display = 'inline-block';
-        greeting.textContent = `Hi, ${user.username}`;
-        logoutBtn.style.display = 'inline-block';
-    } else {
-        loginBtn.style.display = 'inline-block';
-        greeting.style.display = 'none';
-        logoutBtn.style.display = 'none';
+    try {
+        const response = await fetch('https://communityfriend.onrender.com/api/me', {
+            credentials: 'include'
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            loginBtn.style.display = 'none';
+            greeting.style.display = 'inline-block';
+            greeting.textContent = `Hi, ${data.user.username}`;
+            logoutBtn.style.display = 'inline-block';
+        } else {
+            loginBtn.style.display = 'inline-block';
+            greeting.style.display = 'none';
+            logoutBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
     }
 }
 
 function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    updateHeaderAuth();
-    window.location.reload();
+    fetch('https://communityfriend.onrender.com/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+    }).then(() => {
+        window.location.reload();
+    });
 }
 
 window.addEventListener('load', updateHeaderAuth);

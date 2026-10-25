@@ -69,9 +69,7 @@ authForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (data.success) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            window.location.href = 'index.html';
+            window.location.href = 'https://community.cosmospark.org'; 
         } else {
             authError.textContent = data.message || 'An error occurred.';
         }

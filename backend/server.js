@@ -63,20 +63,24 @@ initDatabase();
 app.post('/api/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        
         if (!username || !email || !password) {
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
-        
         const hashedPassword = await bcrypt.hash(password, 10);
-        
         const result = await pool.query(
             'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email',
             [username, email, hashedPassword]
         );
-        
         const user = result.rows[0];
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            domain: '.cosmospark.org',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
         
         res.json({
             success: true,
@@ -95,25 +99,27 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Email and password required' });
         }
-        
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        
         if (result.rows.length === 0) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
-        
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password_hash);
-        
         if (!validPassword) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
-        
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            domain: '.cosmospark.org',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
         
         res.json({
             success: true,
@@ -125,29 +131,8 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.get('/api/me', async (req, res) => {
-    try {
-        const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
-        
-        if (!token) {
-            return res.status(401).json({ success: false, message: 'Not authenticated' });
-        }
-        
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const result = await pool.query('SELECT id, username, email FROM users WHERE id = $1', [decoded.userId]);
-        
-        if (result.rows.length === 0) {
-            return res.status(401).json({ success: false, message: 'User not found' });
-        }
-        
-        res.json({ success: true, user: result.rows[0] });
-    } catch (err) {
-        res.status(401).json({ success: false, message: 'Invalid token' });
-    }
-});
-
 app.post('/api/logout', (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', { domain: '.cosmospark.org' });
     res.json({ success: true, message: 'Logged out' });
 });
 
