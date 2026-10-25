@@ -1,5 +1,4 @@
-const API_URL = "https://community.cosmospark.org"; 
-
+const API_URL = "https://communityfriend.onrender.com"; 
 let isLoginMode = true;
 
 const toggleLoginBtn = document.getElementById('toggle-login');

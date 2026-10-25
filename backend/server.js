@@ -12,9 +12,14 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ 
-    origin: true, 
-    credentials: true 
+app.use(cors({
+    origin: [
+        'https://login.cosmospark.org',
+        'https://community.cosmospark.org',
+        'https://cosmospark.org',
+        'https://communityfriend.onrender.com'
+    ],
+    credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
