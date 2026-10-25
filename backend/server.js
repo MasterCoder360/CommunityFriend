@@ -296,24 +296,32 @@ cron.schedule('0 0 * * *', () => {
 
 scrapeAndSave();
 
-app.get('/', (req, res) => {
-    console.log('--- ROOT PATH ACCESSED ---');
-    console.log('Hostname seen by server:', req.hostname);
-    console.log('Host header:', req.headers.host);
-    
-    if (req.hostname === 'login.cosmospark.org' || req.hostname === 'www.login.cosmospark.org') {
-        console.log('Condition met! Serving login.html');
-        return res.sendFile(path.join(__dirname, '../login.html'));
-    }
-    
-    console.log('Condition NOT met. Serving index.html');
-    res.sendFile(path.join(__dirname, '../index.html'));
+// 1. THE TRUTH DETECTOR: This logs EVERY request so we know exactly what the server sees
+app.use((req, res, next) => {
+    console.log('========================================');
+    console.log('INCOMING REQUEST:');
+    console.log('URL:', req.url);
+    console.log('HOSTNAME:', req.hostname);
+    console.log('HOST HEADER:', req.headers.host);
+    console.log('========================================');
+    next(); 
 });
 
-app.use(express.static(path.join(__dirname, '../')));
+app.get('/', (req, res) => {
+    if (req.hostname.includes('login.cosmospark.org')) {
+        console.log('>>> MATCHED LOGIN SUBDOMAIN. SERVING login.html');
+        return res.sendFile(path.join(__dirname, '../login.html'));
+    }
+    console.log('>>> DID NOT MATCH LOGIN. SERVING index.html');
+    return res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+app.use(express.static(path.join(__dirname, '../'), {
+    index: false 
+}));
 
 app.use((req, res) => {
-    if (req.hostname === 'login.cosmospark.org' || req.hostname === 'www.login.cosmospark.org') {
+    if (req.hostname.includes('login.cosmospark.org')) {
         return res.sendFile(path.join(__dirname, '../login.html'));
     }
     res.sendFile(path.join(__dirname, '../index.html'));
