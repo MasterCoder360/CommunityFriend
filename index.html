@@ -8,21 +8,24 @@
     <link rel="preconnect" href="https://gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
 </head>
 <body>
-    <header>
-        <nav>
-            <button class="logo" onclick="window.location.href='index.html'">CommunityFriend</button>
-            <ul class="navlinks">
-                <li><a href="home.html" title="about me">Home</a></li>
-                <li><a href="event.html" title="my hobbies">Events</a></li>
-                <li><a href="service.html" title="my projects">Services</a></li>
-            </ul>
-            <div class="btns">
-                <button class="btn" onclick="window.location.href='login.html'">Sign In</button>
-            </div>
-        </nav>
-    </header>
+<header>
+    <nav>
+        <button class="logo" onclick="window.location.href='index.html'">CommunityFriend</button>
+        <ul class="navlinks">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="event.html">Events</a></li>
+            <li><a href="service.html">Services</a></li>
+        </ul>
+        <div class="btns">
+            <button id="header-login-btn" class="btn" onclick="window.location.href='https://login.cosmospark.org'">Login</button>
+            <span id="header-greeting" style="display: none; font-weight: bold; color: #080808; margin-right: 15px;"></span>
+            <button id="header-logout-btn" class="btn" style="display: none;" onclick="handleLogout()">Logout</button>
+        </div>
+    </nav>
+</header>
 
 <main class="glass-box">
     <h1 class="digital-display">Upcoming Scraped Events</h1>

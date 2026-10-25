@@ -16,3 +16,30 @@ window.addEventListener('load', () => {
         run1();
     }
 });
+function updateHeaderAuth() {
+    const userStr = localStorage.getItem('user');
+    const loginBtn = document.getElementById('header-login-btn');
+    const greeting = document.getElementById('header-greeting');
+    const logoutBtn = document.getElementById('header-logout-btn');
+
+    if (userStr) {
+        const user = JSON.parse(userStr);
+        loginBtn.style.display = 'none';
+        greeting.style.display = 'inline-block';
+        greeting.textContent = `Hi, ${user.username}`;
+        logoutBtn.style.display = 'inline-block';
+    } else {
+        loginBtn.style.display = 'inline-block';
+        greeting.style.display = 'none';
+        logoutBtn.style.display = 'none';
+    }
+}
+
+function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    updateHeaderAuth();
+    window.location.reload();
+}
+
+window.addEventListener('load', updateHeaderAuth);
