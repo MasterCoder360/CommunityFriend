@@ -1,6 +1,14 @@
-const MAIN_API_URL = "https://api.cosmospark.org";
-
 window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userStr = urlParams.get('user');
+
+    if (token && userStr) {
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('auth_user', userStr);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const element1 = document.getElementById('typewriter-text');
     if (element1 && !element1.getAttribute('data-typed')) {
         element1.setAttribute('data-typed', 'true');
@@ -10,7 +18,7 @@ window.addEventListener('load', () => {
 
         function run1() {
             if (index1 < text1.length) {
-                const textNode = document.createTextNode(ntext1.charAt(index1));
+                const textNode = document.createTextNode(text1.charAt(index1));
                 element1.insertBefore(textNode, cursor);
                 index1++;
                 setTimeout(run1, 30);
@@ -23,30 +31,21 @@ window.addEventListener('load', () => {
 });
 
 async function updateHeaderAuth() {
+    const token = localStorage.getItem('auth_token');
+    const userStr = localStorage.getItem('auth_user');
     const loginBtn = document.getElementById('header-login-btn');
     const greeting = document.getElementById('header-greeting');
     const logoutBtn = document.getElementById('header-logout-btn');
 
     if (!loginBtn || !greeting || !logoutBtn) return;
 
-    try {
-        const response = await fetch(`${MAIN_API_URL}/api/me`, {
-            credentials: 'include'
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            loginBtn.style.display = 'none';
-            greeting.style.display = 'inline-block';
-            greeting.textContent = `Hi, ${data.user.username}`;
-            logoutBtn.style.display = 'inline-block';
-        } else {
-            loginBtn.style.display = 'inline-block';
-            greeting.style.display = 'none';
-            logoutBtn.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Auth check failed:', error);
+    if (token && userStr) {
+        const user = JSON.parse(userStr);
+        loginBtn.style.display = 'none';
+        greeting.style.display = 'inline-block';
+        greeting.textContent = `Hi, ${user.username}`;
+        logoutBtn.style.display = 'inline-block';
+    } else {
         loginBtn.style.display = 'inline-block';
         greeting.style.display = 'none';
         logoutBtn.style.display = 'none';
@@ -54,10 +53,7 @@ async function updateHeaderAuth() {
 }
 
 function handleLogout() {
-    fetch(`${MAIN_API_URL}/api/logout`, {
-        method: 'POST',
-        credentials: 'include'
-    }).then(() => {
-        window.location.reload();
-    });
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.location.reload();
 }

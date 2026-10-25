@@ -59,9 +59,7 @@ authForm.addEventListener('submit', async (e) => {
 
         const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
             credentials: 'include'
         });
@@ -69,7 +67,9 @@ authForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (data.success) {
-            window.location.href = 'https://community.cosmospark.org';
+            const userEncoded = encodeURIComponent(JSON.stringify(data.user));
+            const tokenEncoded = encodeURIComponent(data.token);
+            window.location.href = `https://community.cosmospark.org/?token=${tokenEncoded}&user=${userEncoded}`;
         } else {
             authError.textContent = data.message || 'An error occurred.';
         }
