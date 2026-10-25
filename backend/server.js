@@ -296,7 +296,24 @@ cron.schedule('0 0 * * *', () => {
 
 scrapeAndSave();
 
-// 1. THE TRUTH DETECTOR: This logs EVERY request so we know exactly what the server sees
+app.get('/prove-it', (req, res) => {
+    console.log('>>> PROVE IT ROUTE HIT! HOSTNAME:', req.hostname);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`
+        <html>
+        <head><title>Success!</title></head>
+        <body style="background: #111; color: #00ff00; font-family: monospace; text-align: center; padding-top: 100px;">
+            <h1 style="font-size: 3rem;">🎉 SUCCESS! 🎉</h1>
+            <p style="font-size: 1.5rem;">The server correctly identified the hostname as: <strong>${req.hostname}</strong></p>
+            <p style="font-size: 1.2rem;">Your routing code is working perfectly.</p>
+            <p style="color: #ff5555;">The reason "/" shows index.html is 100% due to local browser caching.</p>
+            <br>
+            <a href="/" style="color: #fff; text-decoration: underline;">Click here to try the root path again</a>
+        </body>
+        </html>
+    `);
+});
+
 app.use((req, res, next) => {
     console.log('========================================');
     console.log('INCOMING REQUEST:');
