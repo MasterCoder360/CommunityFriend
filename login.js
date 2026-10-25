@@ -1,4 +1,4 @@
-const API_URL = "https://communityfriend.onrender.com"; 
+const API_URL = "https://community.cosmospark.org"; 
 
 let isLoginMode = true;
 
@@ -62,14 +62,14 @@ authForm.addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload), // <-- THIS WAS MISSING!
+            body: JSON.stringify(payload),
             credentials: 'include'
         });
 
         const data = await response.json();
 
         if (data.success) {
-            window.location.href = 'https://community.cosmospark.org'; 
+            window.location.href = 'https://community.cosmospark.org';
         } else {
             authError.textContent = data.message || 'An error occurred.';
         }

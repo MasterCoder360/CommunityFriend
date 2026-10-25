@@ -52,3 +52,41 @@ function handleLogout() {
 }
 
 window.addEventListener('load', updateHeaderAuth);
+const MAIN_API_URL = "https://community.cosmospark.org";
+
+async function updateHeaderAuth() {
+    const loginBtn = document.getElementById('header-login-btn');
+    const greeting = document.getElementById('header-greeting');
+    const logoutBtn = document.getElementById('header-logout-btn');
+
+    try {
+        const response = await fetch(`${MAIN_API_URL}/api/me`, {
+            credentials: 'include'
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            loginBtn.style.display = 'none';
+            greeting.style.display = 'inline-block';
+            greeting.textContent = `Hi, ${data.user.username}`;
+            logoutBtn.style.display = 'inline-block';
+        } else {
+            loginBtn.style.display = 'inline-block';
+            greeting.style.display = 'none';
+            logoutBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+    }
+}
+
+function handleLogout() {
+    fetch(`${MAIN_API_URL}/api/logout`, {
+        method: 'POST',
+        credentials: 'include'
+    }).then(() => {
+        window.location.reload();
+    });
+}
+
+window.addEventListener('load', updateHeaderAuth);
