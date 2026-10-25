@@ -296,40 +296,11 @@ cron.schedule('0 0 * * *', () => {
 
 scrapeAndSave();
 
-app.get('/prove-it', (req, res) => {
-    console.log('>>> PROVE IT ROUTE HIT! HOSTNAME:', req.hostname);
-    res.setHeader('Content-Type', 'text/html');
-    res.send(`
-        <html>
-        <head><title>Success!</title></head>
-        <body style="background: #111; color: #00ff00; font-family: monospace; text-align: center; padding-top: 100px;">
-            <h1 style="font-size: 3rem;">🎉 SUCCESS! 🎉</h1>
-            <p style="font-size: 1.5rem;">The server correctly identified the hostname as: <strong>${req.hostname}</strong></p>
-            <p style="font-size: 1.2rem;">Your routing code is working perfectly.</p>
-            <p style="color: #ff5555;">The reason "/" shows index.html is 100% due to local browser caching.</p>
-            <br>
-            <a href="/" style="color: #fff; text-decoration: underline;">Click here to try the root path again</a>
-        </body>
-        </html>
-    `);
-});
-
-app.use((req, res, next) => {
-    console.log('========================================');
-    console.log('INCOMING REQUEST:');
-    console.log('URL:', req.url);
-    console.log('HOSTNAME:', req.hostname);
-    console.log('HOST HEADER:', req.headers.host);
-    console.log('========================================');
-    next(); 
-});
-
 app.get('/', (req, res) => {
     if (req.hostname.includes('login.cosmospark.org')) {
-        console.log('>>> MATCHED LOGIN SUBDOMAIN. SERVING login.html');
-        return res.sendFile(path.join(__dirname, '../login.html'));
+        return res.redirect(302, '/login');
     }
-    console.log('>>> DID NOT MATCH LOGIN. SERVING index.html');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.sendFile(path.join(__dirname, '../index.html'));
 });
 
