@@ -1,4 +1,4 @@
-const MAIN_API_URL = "https://communityfriend.onrender.com";
+const MAIN_API_URL = "https://api.cosmospark.org";
 
 window.addEventListener('load', () => {
     const element1 = document.getElementById('typewriter-text');
@@ -10,7 +10,7 @@ window.addEventListener('load', () => {
 
         function run1() {
             if (index1 < text1.length) {
-                const textNode = document.createTextNode(text1.charAt(index1));
+                const textNode = document.createTextNode(ntext1.charAt(index1));
                 element1.insertBefore(textNode, cursor);
                 index1++;
                 setTimeout(run1, 30);

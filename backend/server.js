@@ -17,6 +17,7 @@ app.use(cors({
         'https://login.cosmospark.org',
         'https://community.cosmospark.org',
         'https://cosmospark.org',
+        'https://api.cosmospark.org',
         'https://communityfriend.onrender.com'
     ],
     credentials: true
