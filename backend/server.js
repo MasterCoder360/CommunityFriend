@@ -296,8 +296,17 @@ cron.schedule('0 0 * * *', () => {
 
 scrapeAndSave();
 
+app.get('/', (req, res) => {
+    if (req.hostname === 'login.cosmospark.org') {
+        return res.sendFile(path.join(__dirname, '../login.html'));
+    }
+    res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+app.use(express.static(path.join(__dirname, '../')));
+
 app.use((req, res) => {
-    if (req.hostname === 'login.cosmospark.org' && req.path === '/') {
+    if (req.hostname === 'login.cosmospark.org') {
         return res.sendFile(path.join(__dirname, '../login.html'));
     }
     res.sendFile(path.join(__dirname, '../index.html'));
