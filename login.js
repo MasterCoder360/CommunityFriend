@@ -40,7 +40,6 @@ authForm.addEventListener('submit', async (e) => {
     
     authError.textContent = '';
 
-    // Frontend validation
     if (!email || !password) {
         authError.textContent = 'Email and password are required.';
         return;
@@ -63,6 +62,7 @@ authForm.addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
+            body: JSON.stringify(payload), // <-- THIS WAS MISSING!
             credentials: 'include'
         });
 
