@@ -190,7 +190,7 @@ h1.digital-display {
     font-size: 1.5em;
     opacity: 0;
     animation: fadeIn 2s ease-in forwards;
-    animation-delay: 13s; 
+    animation-delay: 0.1s; 
 }
 
 @keyframes fadeIn {
