@@ -297,16 +297,23 @@ cron.schedule('0 0 * * *', () => {
 scrapeAndSave();
 
 app.get('/', (req, res) => {
-    if (req.hostname === 'login.cosmospark.org') {
+    console.log('--- ROOT PATH ACCESSED ---');
+    console.log('Hostname seen by server:', req.hostname);
+    console.log('Host header:', req.headers.host);
+    
+    if (req.hostname === 'login.cosmospark.org' || req.hostname === 'www.login.cosmospark.org') {
+        console.log('Condition met! Serving login.html');
         return res.sendFile(path.join(__dirname, '../login.html'));
     }
+    
+    console.log('Condition NOT met. Serving index.html');
     res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 app.use(express.static(path.join(__dirname, '../')));
 
 app.use((req, res) => {
-    if (req.hostname === 'login.cosmospark.org') {
+    if (req.hostname === 'login.cosmospark.org' || req.hostname === 'www.login.cosmospark.org') {
         return res.sendFile(path.join(__dirname, '../login.html'));
     }
     res.sendFile(path.join(__dirname, '../index.html'));
