@@ -133,6 +133,7 @@ app.get('/api/search-idealist', async (req, res) => {
 
     let browser;
     try {
+        console.log(`Starting Idealist search for: "${q}"`);
         browser = await chromium.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
@@ -145,50 +146,65 @@ app.get('/api/search-idealist', async (req, res) => {
         const page = await context.newPage();
         const searchUrl = `https://www.idealist.org/en/volunteer?q=${encodeURIComponent(q)}`;
         
-        await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 60000 });
-        await page.waitForTimeout(2000); 
+        console.log('Navigating to:', searchUrl);
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        
+        // Wait a bit for React/JS to render the cards
+        await page.waitForTimeout(3000);
+
+        // Try to close any cookie consent banners that might block the view
+        await page.locator('button:has-text("Accept"), button:has-text("Agree"), button:has-text("Allow"), .cookie-banner button').click({ timeout: 3000 }).catch(() => {
+            // Ignore if no banner is found
+        });
+        
+        await page.waitForTimeout(1000);
 
         const results = await page.evaluate(() => {
             const opportunities = [];
-            const cards = document.querySelectorAll('a[href*="/en/volunteer/"]');
+            const seenUrls = new Set();
             
-            cards.forEach(card => {
-                const text = card.innerText;
-                if (!text || text.length < 20) return; 
-                
-                const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-                if (lines.length < 2) return;
-
-                const title = lines[0];
-                const organization = lines[1];
-                
-                let location = 'Location not specified';
-                let posted = '';
-                
-                for (let i = 2; i < lines.length; i++) {
-                    const line = lines[i];
-                    if (line.match(/Remote|On-site|Hybrid|Anywhere/i) || line.match(/[A-Z][a-z]+, [A-Z]{2}/)) {
-                        location = line;
-                    } else if (line.match(/Posted \d+ (hours?|days?|months?|weeks?) ago/i)) {
-                        posted = line;
+            // Idealist cards are usually wrapped in links or contain specific heading structures
+            // We will grab all links and filter for the ones that look like opportunity cards
+            const allLinks = Array.from(document.querySelectorAll('a'));
+            
+            allLinks.forEach(link => {
+                const href = link.getAttribute('href') || '';
+                // Look for links that point to specific volunteer opportunities
+                if (href.includes('/en/volunteer/') && !href.includes('?')) {
+                    const text = link.innerText.trim();
+                    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    
+                    if (lines.length >= 2) {
+                        const title = lines[0];
+                        const org = lines[1];
+                        
+                        // Filter out navigation links, "View more", etc.
+                        if (title.length > 15 && !title.toLowerCase().includes('view') && !title.toLowerCase().includes('sign up')) {
+                            const fullUrl = href.startsWith('http') ? href : 'https://www.idealist.org' + href;
+                            
+                            if (!seenUrls.has(fullUrl)) {
+                                seenUrls.add(fullUrl);
+                                
+                                // Try to find location in the text
+                                const locationLine = lines.find(l => l.match(/Remote|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/));
+                                
+                                opportunities.push({
+                                    title: title,
+                                    organization: org,
+                                    location: locationLine || 'Location not specified',
+                                    posted: lines.find(l => l.match(/Posted \d+ (hours?|days?|months?|weeks?) ago/i)) || '',
+                                    url: fullUrl
+                                });
+                            }
+                        }
                     }
-                }
-
-                const isDuplicate = opportunities.some(op => op.title === title && op.organization === organization);
-                if (!isDuplicate && title.length > 5) {
-                    opportunities.push({
-                        title: title,
-                        organization: organization,
-                        location: location,
-                        posted: posted,
-                        url: 'https://www.idealist.org' + card.getAttribute('href')
-                    });
                 }
             });
             
             return opportunities.slice(0, 15);
         });
 
+        console.log(`Successfully extracted ${results.length} opportunities from Idealist.`);
         await browser.close();
         res.json({ success: true, count: results.length, data: results });
     } catch (error) {
