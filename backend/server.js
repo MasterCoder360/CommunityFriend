@@ -133,53 +133,35 @@ app.get('/api/search-idealist', async (req, res) => {
 
     let browser;
     try {
-        console.log(`Starting Idealist search for: "${q}"`);
+        console.log(`Starting volunteer search for: "${q}"`);
         browser = await chromium.launch({
             headless: true,
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox', 
-                '--disable-blink-features=AutomationControlled'
-            ]
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         
         const context = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport: { width: 1280, height: 800 }
-        });
-
-        await context.addInitScript(() => {
-            Object.defineProperty(navigator, 'webdriver', { get: () => false });
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         });
         
         const page = await context.newPage();
-        const searchUrl = `https://www.idealist.org/en/volunteer?q=${encodeURIComponent(q)}`;
+        // AllForGood is a major aggregator that includes Idealist and VolunteerMatch opportunities
+        const searchUrl = `https://www.allforgood.org/search?q=${encodeURIComponent(q)}&page_size=15`;
         
         console.log('Navigating to:', searchUrl);
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        await page.waitForTimeout(2500);
+        await page.waitForTimeout(2000);
 
-        const pageTitle = await page.title();
-        if (pageTitle.includes('Attention Required') || pageTitle.includes('Cloudflare')) {
-            console.error('Blocked by Cloudflare bot protection.');
-            await browser.close();
-            return res.status(503).json({ success: false, message: 'Service temporarily blocked by anti-bot protection.' });
-        }
-
-        const debugInfo = await page.evaluate(() => {
-            const allLinks = Array.from(document.querySelectorAll('a'));
-            const sampleLinks = allLinks.slice(0, 30).map(link => ({
-                href: link.getAttribute('href'),
-                text: link.innerText.trim().substring(0, 50)
-            }));
-            
+        const results = await page.evaluate(() => {
             const opportunities = [];
-            const seenUrls = new Set();
+            // AllForGood uses a very consistent and simple HTML structure
+            const cards = document.querySelectorAll('.search-result, .opportunity-card, .result-item');
             
-            allLinks.forEach(link => {
+            // Fallback: if specific classes aren't found, look for any link with "volunteer" or "opportunity" in a card-like structure
+            const links = document.querySelectorAll('a');
+            
+            links.forEach(link => {
                 const href = link.getAttribute('href') || '';
-                // Broaden the search to catch any volunteer-related URL
-                if (href.includes('/volunteer') || href.includes('/opportunity')) {
+                if (href.includes('/display/') || href.includes('/opportunity/')) {
                     const text = link.innerText.trim();
                     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                     
@@ -187,18 +169,18 @@ app.get('/api/search-idealist', async (req, res) => {
                         const title = lines[0];
                         const org = lines[1];
                         
-                        if (title.length > 10 && !title.toLowerCase().includes('view') && !title.toLowerCase().includes('sign up')) {
-                            const fullUrl = href.startsWith('http') ? href : 'https://www.idealist.org' + href;
+                        if (title.length > 10 && !title.toLowerCase().includes('read more')) {
+                            const fullUrl = href.startsWith('http') ? href : 'https://www.allforgood.org' + href;
                             
-                            if (!seenUrls.has(fullUrl)) {
-                                seenUrls.add(fullUrl);
-                                const locationLine = lines.find(l => l.match(/Remote|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/));
+                            // Simple deduplication
+                            if (!opportunities.some(op => op.url === fullUrl)) {
+                                const locationLine = lines.find(l => l.match(/Remote|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/)) || 'Location not specified';
                                 
                                 opportunities.push({
                                     title: title,
                                     organization: org,
-                                    location: locationLine || 'Location not specified',
-                                    posted: lines.find(l => l.match(/Posted \d+ (hours?|days?|months?|weeks?) ago/i)) || '',
+                                    location: locationLine,
+                                    posted: lines.find(l => l.match(/Posted|Date/i)) || '',
                                     url: fullUrl
                                 });
                             }
@@ -207,24 +189,18 @@ app.get('/api/search-idealist', async (req, res) => {
                 }
             });
             
-            return { sampleLinks, opportunities };
+            return opportunities.slice(0, 15);
         });
 
-        console.log('--- DEBUG: First 30 links on the page ---');
-        debugInfo.sampleLinks.forEach((link, i) => {
-            console.log(`${i + 1}. HREF: ${link.href} | TEXT: ${link.text}`);
-        });
-        console.log(`--- END DEBUG ---`);
-        console.log(`Successfully extracted ${debugInfo.opportunities.length} opportunities.`);
-
+        console.log(`Successfully extracted ${results.length} opportunities.`);
         await browser.close();
-        res.json({ success: true, count: debugInfo.opportunities.length, data: debugInfo.opportunities.slice(0, 15) });
+        res.json({ success: true, count: results.length, data: results });
     } catch (error) {
-        console.error('Idealist scraping error:', error);
+        console.error('Volunteer search error:', error);
         if (browser) {
             try { await browser.close(); } catch (e) {}
         }
-        res.status(500).json({ success: false, message: 'Failed to search Idealist.', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to search for opportunities.', error: error.message });
     }
 });
 
