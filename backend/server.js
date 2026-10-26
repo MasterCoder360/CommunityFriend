@@ -125,6 +125,78 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ success: false, message: 'Login failed', error: err.message });
     }
 });
+app.get('/api/search-idealist', async (req, res) => {
+    const { q } = req.query;
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Query parameter "q" is required' });
+    }
+
+    let browser;
+    try {
+        browser = await chromium.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
+        });
+        
+        const context = await browser.newContext({
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        });
+        
+        const page = await context.newPage();
+        const searchUrl = `https://www.idealist.org/en/volunteer?q=${encodeURIComponent(q)}`;
+        
+        await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 60000 });
+        await page.waitForTimeout(2000); 
+
+        const results = await page.evaluate(() => {
+            const opportunities = [];
+            const cards = document.querySelectorAll('a[href*="/en/volunteer/"]');
+            
+            cards.forEach(card => {
+                const text = card.innerText;
+                if (!text || text.length < 20) return; 
+                
+                const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                if (lines.length < 2) return;
+
+                const title = lines[0];
+                const organization = lines[1];
+                
+                let location = 'Location not specified';
+                let posted = '';
+                
+                for (let i = 2; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line.match(/Remote|On-site|Hybrid|Anywhere/i) || line.match(/[A-Z][a-z]+, [A-Z]{2}/)) {
+                        location = line;
+                    } else if (line.match(/Posted \d+ (hours?|days?|months?|weeks?) ago/i)) {
+                        posted = line;
+                    }
+                }
+
+                const isDuplicate = opportunities.some(op => op.title === title && op.organization === organization);
+                if (!isDuplicate && title.length > 5) {
+                    opportunities.push({
+                        title: title,
+                        organization: organization,
+                        location: location,
+                        posted: posted,
+                        url: 'https://www.idealist.org' + card.getAttribute('href')
+                    });
+                }
+            });
+            
+            return opportunities.slice(0, 15);
+        });
+
+        await browser.close();
+        res.json({ success: true, count: results.length, data: results });
+    } catch (error) {
+        console.error('Idealist scraping error:', error);
+        if (browser) await browser.close();
+        res.status(500).json({ success: false, message: 'Failed to search Idealist', error: error.message });
+    }
+});
 
 app.get('/api/me', async (req, res) => {
     try {
