@@ -149,21 +149,16 @@ app.get('/api/search-idealist', async (req, res) => {
         });
         
         const page = await context.newPage();
-        const searchUrl = `https://engage.pointsoflight.org/search/i/?query=${encodeURIComponent(q)}`;
+        const searchUrl = `https://engage.pointsoflight.org/search/i/?query=${encodeURIComponent(q)}&page=2`;
         
         console.log('Navigating to:', searchUrl);
-        
-        // Wait for the network to be mostly idle, giving the React app time to fetch and render results
         await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
-        
-        // Give it an extra 2 seconds to ensure the DOM is fully painted
         await page.waitForTimeout(2500);
 
         const results = await page.evaluate(() => {
             const opportunities = [];
             const seenUrls = new Set();
             
-            // Points of Light opportunity links always contain '/opportunities/' in the href
             const opportunityLinks = Array.from(document.querySelectorAll('a[href*="/opportunities/"]'));
             
             opportunityLinks.forEach(link => {
@@ -172,7 +167,6 @@ app.get('/api/search-idealist', async (req, res) => {
                 
                 if (seenUrls.has(fullUrl)) return;
                 
-                // Get the text content of the entire card/container, not just the link
                 const card = link.closest('.opportunity-card, .search-result, .result-item, div') || link;
                 const rawText = card.innerText;
                 const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -181,7 +175,6 @@ app.get('/api/search-idealist', async (req, res) => {
                     const title = lines[0];
                     const org = lines[1];
                     
-                    // Filter out navigation links, "Show More", etc.
                     if (title.length > 10 && !title.toLowerCase().includes('show more') && !title.toLowerCase().includes('view all')) {
                         seenUrls.add(fullUrl);
                         
