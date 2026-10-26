@@ -136,41 +136,54 @@ app.get('/api/search-idealist', async (req, res) => {
         console.log(`Starting Idealist search for: "${q}"`);
         browser = await chromium.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-blink-features=AutomationControlled',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process'
+            ]
         });
         
         const context = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport: { width: 1280, height: 800 }
+        });
+
+        // Mask webdriver to bypass basic bot detection
+        await context.addInitScript(() => {
+            Object.defineProperty(navigator, 'webdriver', { get: () => false });
         });
         
         const page = await context.newPage();
         const searchUrl = `https://www.idealist.org/en/volunteer?q=${encodeURIComponent(q)}`;
         
         console.log('Navigating to:', searchUrl);
-        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
         
-        // Wait a bit for React/JS to render the cards
-        await page.waitForTimeout(3000);
+        // Use 'domcontentloaded' with a strict 15-second timeout to prevent infinite hanging
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        
+        // Short, fixed wait for React to paint the initial cards
+        await page.waitForTimeout(2000);
 
-        // Try to close any cookie consent banners that might block the view
-        await page.locator('button:has-text("Accept"), button:has-text("Agree"), button:has-text("Allow"), .cookie-banner button').click({ timeout: 3000 }).catch(() => {
-            // Ignore if no banner is found
-        });
-        
-        await page.waitForTimeout(1000);
+        // Check if we hit a Cloudflare/CAPTCHA block
+        const pageTitle = await page.title();
+        if (pageTitle.includes('Attention Required') || pageTitle.includes('Cloudflare')) {
+            console.error('Blocked by Cloudflare bot protection.');
+            await browser.close();
+            return res.status(503).json({ success: false, message: 'Service temporarily blocked by anti-bot protection. Please try again in a few minutes.' });
+        }
 
         const results = await page.evaluate(() => {
             const opportunities = [];
             const seenUrls = new Set();
             
-            // Idealist cards are usually wrapped in links or contain specific heading structures
-            // We will grab all links and filter for the ones that look like opportunity cards
+            // Idealist cards are usually links containing specific text patterns
             const allLinks = Array.from(document.querySelectorAll('a'));
             
             allLinks.forEach(link => {
                 const href = link.getAttribute('href') || '';
-                // Look for links that point to specific volunteer opportunities
-                if (href.includes('/en/volunteer/') && !href.includes('?')) {
+                if (href.includes('/en/volunteer/') && !href.includes('?') && !href.includes('#')) {
                     const text = link.innerText.trim();
                     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                     
@@ -179,13 +192,12 @@ app.get('/api/search-idealist', async (req, res) => {
                         const org = lines[1];
                         
                         // Filter out navigation links, "View more", etc.
-                        if (title.length > 15 && !title.toLowerCase().includes('view') && !title.toLowerCase().includes('sign up')) {
+                        if (title.length > 10 && !title.toLowerCase().includes('view') && !title.toLowerCase().includes('sign up') && !title.toLowerCase().includes('learn more')) {
                             const fullUrl = href.startsWith('http') ? href : 'https://www.idealist.org' + href;
                             
                             if (!seenUrls.has(fullUrl)) {
                                 seenUrls.add(fullUrl);
                                 
-                                // Try to find location in the text
                                 const locationLine = lines.find(l => l.match(/Remote|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/));
                                 
                                 opportunities.push({
@@ -209,8 +221,10 @@ app.get('/api/search-idealist', async (req, res) => {
         res.json({ success: true, count: results.length, data: results });
     } catch (error) {
         console.error('Idealist scraping error:', error);
-        if (browser) await browser.close();
-        res.status(500).json({ success: false, message: 'Failed to search Idealist', error: error.message });
+        if (browser) {
+            try { await browser.close(); } catch (e) {}
+        }
+        res.status(500).json({ success: false, message: 'Failed to search Idealist. The site may be blocking automated requests.', error: error.message });
     }
 });
 
