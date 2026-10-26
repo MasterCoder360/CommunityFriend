@@ -133,58 +133,68 @@ app.get('/api/search-idealist', async (req, res) => {
 
     let browser;
     try {
-        console.log(`Starting volunteer search for: "${q}"`);
+        console.log(`Starting Points of Light search for: "${q}"`);
         browser = await chromium.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
         });
         
         const context = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport: { width: 1280, height: 800 }
+        });
+
+        await context.addInitScript(() => {
+            Object.defineProperty(navigator, 'webdriver', { get: () => false });
         });
         
         const page = await context.newPage();
-        // AllForGood is a major aggregator that includes Idealist and VolunteerMatch opportunities
-        const searchUrl = `https://www.allforgood.org/search?q=${encodeURIComponent(q)}&page_size=15`;
+        const searchUrl = `https://engage.pointsoflight.org/search/i/?query=${encodeURIComponent(q)}`;
         
         console.log('Navigating to:', searchUrl);
-        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        await page.waitForTimeout(2000);
+        
+        // Wait for the network to be mostly idle, giving the React app time to fetch and render results
+        await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        
+        // Give it an extra 2 seconds to ensure the DOM is fully painted
+        await page.waitForTimeout(2500);
 
         const results = await page.evaluate(() => {
             const opportunities = [];
-            // AllForGood uses a very consistent and simple HTML structure
-            const cards = document.querySelectorAll('.search-result, .opportunity-card, .result-item');
+            const seenUrls = new Set();
             
-            // Fallback: if specific classes aren't found, look for any link with "volunteer" or "opportunity" in a card-like structure
-            const links = document.querySelectorAll('a');
+            // Points of Light opportunity links always contain '/opportunities/' in the href
+            const opportunityLinks = Array.from(document.querySelectorAll('a[href*="/opportunities/"]'));
             
-            links.forEach(link => {
+            opportunityLinks.forEach(link => {
                 const href = link.getAttribute('href') || '';
-                if (href.includes('/display/') || href.includes('/opportunity/')) {
-                    const text = link.innerText.trim();
-                    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                const fullUrl = href.startsWith('http') ? href : 'https://engage.pointsoflight.org' + href;
+                
+                if (seenUrls.has(fullUrl)) return;
+                
+                // Get the text content of the entire card/container, not just the link
+                const card = link.closest('.opportunity-card, .search-result, .result-item, div') || link;
+                const rawText = card.innerText;
+                const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                
+                if (lines.length >= 2) {
+                    const title = lines[0];
+                    const org = lines[1];
                     
-                    if (lines.length >= 2) {
-                        const title = lines[0];
-                        const org = lines[1];
+                    // Filter out navigation links, "Show More", etc.
+                    if (title.length > 10 && !title.toLowerCase().includes('show more') && !title.toLowerCase().includes('view all')) {
+                        seenUrls.add(fullUrl);
                         
-                        if (title.length > 10 && !title.toLowerCase().includes('read more')) {
-                            const fullUrl = href.startsWith('http') ? href : 'https://www.allforgood.org' + href;
-                            
-                            // Simple deduplication
-                            if (!opportunities.some(op => op.url === fullUrl)) {
-                                const locationLine = lines.find(l => l.match(/Remote|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/)) || 'Location not specified';
-                                
-                                opportunities.push({
-                                    title: title,
-                                    organization: org,
-                                    location: locationLine,
-                                    posted: lines.find(l => l.match(/Posted|Date/i)) || '',
-                                    url: fullUrl
-                                });
-                            }
-                        }
+                        const locationLine = lines.find(l => l.match(/Remote|Virtual|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/)) || 'Location not specified';
+                        const postedLine = lines.find(l => l.match(/Posted|Date|Deadline/i)) || '';
+                        
+                        opportunities.push({
+                            title: title,
+                            organization: org,
+                            location: locationLine,
+                            posted: postedLine,
+                            url: fullUrl
+                        });
                     }
                 }
             });
@@ -192,7 +202,7 @@ app.get('/api/search-idealist', async (req, res) => {
             return opportunities.slice(0, 15);
         });
 
-        console.log(`Successfully extracted ${results.length} opportunities.`);
+        console.log(`Successfully extracted ${results.length} opportunities from Points of Light.`);
         await browser.close();
         res.json({ success: true, count: results.length, data: results });
     } catch (error) {
