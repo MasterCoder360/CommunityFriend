@@ -139,9 +139,7 @@ app.get('/api/search-idealist', async (req, res) => {
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox', 
-                '--disable-blink-features=AutomationControlled',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process'
+                '--disable-blink-features=AutomationControlled'
             ]
         });
         
@@ -150,7 +148,6 @@ app.get('/api/search-idealist', async (req, res) => {
             viewport: { width: 1280, height: 800 }
         });
 
-        // Mask webdriver to bypass basic bot detection
         await context.addInitScript(() => {
             Object.defineProperty(navigator, 'webdriver', { get: () => false });
         });
@@ -159,31 +156,30 @@ app.get('/api/search-idealist', async (req, res) => {
         const searchUrl = `https://www.idealist.org/en/volunteer?q=${encodeURIComponent(q)}`;
         
         console.log('Navigating to:', searchUrl);
-        
-        // Use 'domcontentloaded' with a strict 15-second timeout to prevent infinite hanging
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        
-        // Short, fixed wait for React to paint the initial cards
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(2500);
 
-        // Check if we hit a Cloudflare/CAPTCHA block
         const pageTitle = await page.title();
         if (pageTitle.includes('Attention Required') || pageTitle.includes('Cloudflare')) {
             console.error('Blocked by Cloudflare bot protection.');
             await browser.close();
-            return res.status(503).json({ success: false, message: 'Service temporarily blocked by anti-bot protection. Please try again in a few minutes.' });
+            return res.status(503).json({ success: false, message: 'Service temporarily blocked by anti-bot protection.' });
         }
 
-        const results = await page.evaluate(() => {
+        const debugInfo = await page.evaluate(() => {
+            const allLinks = Array.from(document.querySelectorAll('a'));
+            const sampleLinks = allLinks.slice(0, 30).map(link => ({
+                href: link.getAttribute('href'),
+                text: link.innerText.trim().substring(0, 50)
+            }));
+            
             const opportunities = [];
             const seenUrls = new Set();
             
-            // Idealist cards are usually links containing specific text patterns
-            const allLinks = Array.from(document.querySelectorAll('a'));
-            
             allLinks.forEach(link => {
                 const href = link.getAttribute('href') || '';
-                if (href.includes('/en/volunteer/') && !href.includes('?') && !href.includes('#')) {
+                // Broaden the search to catch any volunteer-related URL
+                if (href.includes('/volunteer') || href.includes('/opportunity')) {
                     const text = link.innerText.trim();
                     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                     
@@ -191,13 +187,11 @@ app.get('/api/search-idealist', async (req, res) => {
                         const title = lines[0];
                         const org = lines[1];
                         
-                        // Filter out navigation links, "View more", etc.
-                        if (title.length > 10 && !title.toLowerCase().includes('view') && !title.toLowerCase().includes('sign up') && !title.toLowerCase().includes('learn more')) {
+                        if (title.length > 10 && !title.toLowerCase().includes('view') && !title.toLowerCase().includes('sign up')) {
                             const fullUrl = href.startsWith('http') ? href : 'https://www.idealist.org' + href;
                             
                             if (!seenUrls.has(fullUrl)) {
                                 seenUrls.add(fullUrl);
-                                
                                 const locationLine = lines.find(l => l.match(/Remote|On-site|Hybrid|Anywhere/i) || l.match(/[A-Z][a-z]+, [A-Z]{2}/));
                                 
                                 opportunities.push({
@@ -213,18 +207,24 @@ app.get('/api/search-idealist', async (req, res) => {
                 }
             });
             
-            return opportunities.slice(0, 15);
+            return { sampleLinks, opportunities };
         });
 
-        console.log(`Successfully extracted ${results.length} opportunities from Idealist.`);
+        console.log('--- DEBUG: First 30 links on the page ---');
+        debugInfo.sampleLinks.forEach((link, i) => {
+            console.log(`${i + 1}. HREF: ${link.href} | TEXT: ${link.text}`);
+        });
+        console.log(`--- END DEBUG ---`);
+        console.log(`Successfully extracted ${debugInfo.opportunities.length} opportunities.`);
+
         await browser.close();
-        res.json({ success: true, count: results.length, data: results });
+        res.json({ success: true, count: debugInfo.opportunities.length, data: debugInfo.opportunities.slice(0, 15) });
     } catch (error) {
         console.error('Idealist scraping error:', error);
         if (browser) {
             try { await browser.close(); } catch (e) {}
         }
-        res.status(500).json({ success: false, message: 'Failed to search Idealist. The site may be blocking automated requests.', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to search Idealist.', error: error.message });
     }
 });
 
