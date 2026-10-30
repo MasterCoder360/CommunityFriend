@@ -166,12 +166,31 @@ h1.digital-display {
     margin: 6px 0;
     font-family: Arial, sans-serif;
 }
+.event-link {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: rgba(3, 182, 15, 0.8);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.event-link:hover {
+    background: rgba(3, 182, 15, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(3, 182, 15, 0.3);
+}
 
 #fadeText {
     font-size: 1.5em;
     opacity: 0;
     animation: fadeIn 2s ease-in forwards;
-    animation-delay: 13s; 
+    animation-delay: 0.1s; 
 }
 
 @keyframes fadeIn {

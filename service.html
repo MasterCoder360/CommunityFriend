@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Service - CommunityFriend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="service.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <button class="logo" onclick="window.location.href='index.html'">CommunityFriend</button>
+            <ul class="navlinks">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="event.html">Events</a></li>
+                <li><a href="service.html">Services</a></li>
+            </ul>
+            <div class="btns">
+                <button id="header-login-btn" class="btn" onclick="window.location.href='https://login.cosmospark.org'">Login</button>
+                <span id="header-greeting" style="display: none; font-weight: bold; color: #080808; margin-right: 15px;"></span>
+                <button id="header-logout-btn" class="btn" style="display: none;" onclick="handleLogout()">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="service-main">
+        <div class="search-hero">
+            <h1>Find Your Next Opportunity</h1>
+            <p>Search thousands of volunteer and community service roles.</p>
+            
+            <form id="service-search-form" class="search-form">
+                <input type="text" id="service-query" placeholder="e.g., environment, youth, animals..." required>
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </div>
+
+        <div id="loading-indicator" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Searching for opportunities...</p>
+        </div>
+
+        <div id="results-container" class="results-grid"></div>
+    </main>
+
+    <script src="service.js"></script>
+</body>
+</html>

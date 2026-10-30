@@ -8,21 +8,24 @@
     <link rel="preconnect" href="https://gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
 </head>
 <body>
-    <header>
-        <nav>
-            <button class="logo" onclick="window.location.href='index.html'">CommunityFriend</button>
-            <ul class="navlinks">
-                <li><a href="index.html" title="about me">Home</a></li>
-                <li><a href="event.html" title="my hobbies">Events</a></li>
-                <li><a href="service.html" title="my projects">Services</a></li>
-            </ul>
-            <div class="btns">
-                <button class="btn" onclick="window.location.href='contact.html'">Contact Me</button>
-            </div>
-        </nav>
-    </header>
+<header>
+    <nav>
+        <button class="logo" onclick="window.location.href='https://community.cosmospark.org'">CommunityFriend</button>
+        <ul class="navlinks">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="event.html">Events</a></li>
+            <li><a href="service.html">Services</a></li>
+        </ul>
+        <div class="btns">
+            <button id="header-login-btn" class="btn" onclick="window.location.href='https://login.cosmospark.org/login'">Login</button>
+            <span id="header-greeting" style="display: none; font-weight: bold; color: #080808; margin-right: 15px;"></span>
+            <button id="header-logout-btn" class="btn" style="display: none;" onclick="handleLogout()">Logout</button>
+        </div>
+    </nav>
+</header>
 
 <main class="glass-box">
     <h1 class="digital-display">Upcoming Events</h1>
@@ -56,19 +59,21 @@
                 loadingStatus.style.display = "none";
 
                 if (result.success && result.data.length > 0) {
-                    result.data.forEach(event => {
-                        const eventCard = document.createElement("div");
-                        eventCard.className = "event-card";
+                 result.data.forEach(event => {
+                const eventCard = document.createElement("div");
+                eventCard.className = "event-card";
 
-                        const locationText = event.location ? `<p class="event-location">📍 <strong>Location:</strong> ${event.location}</p>` : '';
+                const locationText = event.location ? `<p class="event-location">📍 <strong>Location:</strong> ${event.location}</p>` : '';
+                const urlText = event.url ? `<a href="${event.url}" target="_blank" rel="noopener noreferrer" class="event-link">View Event Details →</a>` : '';
 
-                        eventCard.innerHTML = `
-                            <h2 class="event-title">${event.title}</h2>
-                            <p class="event-date">📅 <strong>Date:</strong> ${event.date}</p>
-                            ${locationText}
-                        `;
-                        eventsContainer.appendChild(eventCard);
-                    });
+                eventCard.innerHTML = `
+                <h2 class="event-title">${event.title}</h2>
+                <p class="event-date">📅 <strong>Date:</strong> ${event.date}</p>
+                ${locationText}
+                ${urlText}
+                `;
+                eventsContainer.appendChild(eventCard);
+                });
                 } else {
                     loadingStatus.textContent = "No upcoming events found at this time. Please report any errors to raahilaalam0804@gmail.com";
                     loadingStatus.style.display = "block";

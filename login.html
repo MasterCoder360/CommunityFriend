@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CommunityFriend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <button class="logo" onclick="window.location.href='https://community.cosmospark.org'">CommunityFriend</button>
+            <div class="btns">
+                <button class="btn" onclick="window.location.href='https://community.cosmospark.org'">Back to Home</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="auth-wrapper">
+        <div class="auth-container">
+            <h1 class="auth-title">Welcome Back</h1>
+            
+            <div class="auth-toggle">
+                <button id="toggle-login" class="active">Sign In</button>
+                <button id="toggle-register">Sign Up</button>
+            </div>
+
+            <form id="auth-form">
+                <div id="username-group" class="input-group" style="display: none;">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Choose a username">
+                </div>
+
+                <div class="input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="Enter your email">
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password">
+                </div>
+
+                <button type="submit" id="submit-btn" class="submit-btn">Sign In</button>
+            </form>
+
+            <div id="auth-error" class="error-message"></div>
+        </div>
+    </main>
+
+    <script src="login.js"></script>
+</body>
+</html>
