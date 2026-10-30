@@ -25,8 +25,8 @@
     </header>
 
 <main class="glass-box">
-    <h1 class="digital-display">Upcoming Scraped Events</h1>
-    <div id="loading" class="loading-status">Loading community events... Please wait.</div>
+    <h1 class="digital-display">Upcoming Events</h1>
+    <div id="loading" class="loading-status">Loading community events. Please wait.</div>
     <div id="events-container" class="events-grid"></div>
 </main>
 
@@ -70,7 +70,7 @@
                         eventsContainer.appendChild(eventCard);
                     });
                 } else {
-                    loadingStatus.textContent = "No upcoming events found at this time.";
+                    loadingStatus.textContent = "No upcoming events found at this time. Please report any errors to raahilaalam0804@gmail.com";
                     loadingStatus.style.display = "block";
                 }
             } catch (error) {
